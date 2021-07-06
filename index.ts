@@ -2,7 +2,7 @@ import * as puppeteer from 'puppeteer';
 import { Page } from "puppeteer";
 
 const usedLinks = [];
-const currentLink = process.argv[2];
+const currentLink = new URL(process.argv[2]);
 const urlsWithStatuses: {
   url?: string;
   statusCode?: number;
@@ -16,7 +16,7 @@ async function run() {
 
     await page.setViewport(override);
 
-    await page.goto(currentLink);
+    await page.goto(currentLink.href);
 
     const links = await getLinks(page);
 
@@ -44,8 +44,9 @@ async function getLinks(page: Page): Promise<string[]> {
 }
 
 async function getPageLinksRecursive(links: string[], page: Page) {
-  for (const link of links) {
-    if (usedLinks?.includes(link) || !link.includes(currentLink)) {
+  for (let link of links) {
+    const url = new URL(link);
+    if (usedLinks?.includes(link) || url.hostname !== currentLink.hostname) {
       continue;
     }
 
@@ -58,7 +59,7 @@ async function getPageLinksRecursive(links: string[], page: Page) {
 
     const separatePageLinks = await getLinks(page);
 
-    usedLinks.push(link);
+    usedLinks.push(url.href);
     if (separatePageLinks.length > 0) {
       await getPageLinksRecursive(separatePageLinks, page);
     }
